@@ -37,11 +37,12 @@ json_base_1 = "{%22data_style%22:%22comment_list%22,%22filter_style%22:%22commen
 json_base_2 = "%22,%22tag%22:0},%22page%22:{%22no%22:"
 json_base_3 = ",%22num%22:30}}"
 poiid = 3474
-page = 20
+page = 1
 
 json_str = json_base_1 + str(poiid) + json_base_2 + str(page) + json_base_3
 
 get_url = get_url_base + json_str
+print(get_url)
 
 
 ip_list = getProxy()
