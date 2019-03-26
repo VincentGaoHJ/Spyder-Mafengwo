@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Dec  7 09:12:19 2018
-
-@author: gaoha
+@Date: Created on Fri Dec  7 09:12:19 2018
+@Author: Haojun Gao
+@Description: 爬马蜂窝地区景点（北京）的名录，但是不包括爬景点内部的景点，例如午门。
 """
 
 import os
@@ -10,6 +10,7 @@ import json
 import urllib
 from random import choice
 from proxy import prepare_proxy
+from proxy_github import getProxy
 #from fake_useragent import UserAgent
 
 def get_last_line(inputfile):
@@ -29,6 +30,7 @@ def get_last_line(inputfile):
     # print "last line : ", last_line
     dat_file.close()
     return last_line
+
 
 
 
@@ -65,7 +67,8 @@ userAgent = [
 
 post_url = "http://www.mafengwo.cn/mdd/base/map/getPoiList"
 #ua = UserAgent()
-ip_list = prepare_proxy()
+# ip_list = prepare_proxy()
+ip_list = getProxy()
 print("[Get_List]The valid IP: ",ip_list)
 
 
@@ -84,7 +87,7 @@ else:
 
 
 with open(filePath, 'a+',encoding='utf-8') as f:
-    while page <= 587:
+    while page <= 643:
         param = {'mddid': '10065', 'page': page}
         param = urllib.parse.urlencode(param)
         param = param.encode('utf-8')

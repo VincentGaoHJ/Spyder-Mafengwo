@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Dec 11 13:40:14 2018
-
-@author: gaoha
+@Date: Created on Tue Dec 11 13:40:14 2018
+@Author: Haojun Gao
+@Description: 
 """
 
 import json
