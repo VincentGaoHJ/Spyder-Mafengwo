@@ -11,7 +11,7 @@ import requests
 import random
 
 
-def get_proxy(host,port,type):
+def get_proxy(host, port, type):
     """
     构建格式化的单个proxies
     """
@@ -25,26 +25,26 @@ def get_proxy(host,port,type):
 
 def getProxy():
     proxy_url = 'https://raw.githubusercontent.com/fate0/proxylist/master/proxy.list'
-    print("[Get_IP]URL:",proxy_url)
+    print("[Get_IP]URL:", proxy_url)
     response = requests.get(proxy_url)
     proxies_list = response.text.split('\n')
-    print("[Get_IP]The number of IPs: ",len(proxies_list))
+    print("[Get_IP]The number of IPs: ", len(proxies_list))
     skip = random.randint(1, 20)
     for i in range(len(proxies_list)):
-        proxy_json = json.loads(proxies_list[i+skip])
+        proxy_json = json.loads(proxies_list[i + skip])
         host = proxy_json['host']
         port = proxy_json['port']
         type = proxy_json['type']
-        proxy = get_proxy(host,port,type)
+        proxy = get_proxy(host, port, type)
         ip_list = []
         try:
-            #telnetlib.Telnet(ip, port=port, timeout=20)
+            # telnetlib.Telnet(ip, port=port, timeout=20)
             requests.get('http://www.mafengwo.cn/', proxies=proxy)
         except:
-            print ('[Get_IP]Failed IP.')
+            print('[Get_IP]Failed IP.')
         else:
-            print ('[Get_IP]Valid IP.')
-            print ("[Get_Valid_IP]",proxy)
+            print('[Get_IP]Valid IP.')
+            print("[Get_Valid_IP]", proxy)
             ip_list.append(proxy)
             return ip_list
 

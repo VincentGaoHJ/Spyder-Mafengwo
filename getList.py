@@ -7,47 +7,43 @@
 
 import os
 import json
-import urllib
 from random import choice
 from proxy import prepare_proxy
+from urllib import request, parse
 from proxy_github import getProxy
-#from fake_useragent import UserAgent
 
-def get_last_line(inputfile):
-    filesize = os.path.getsize(inputfile)
-    blocksize = 1024
-    dat_file = open(inputfile, 'rb')
+
+def get_last_line(input_file):
+    file_size = os.path.getsize(input_file)
+    block_size = 1024
+    dat_file = open(input_file, 'rb')
     last_line = ""
-    if filesize > blocksize:
-        maxseekpoint = (filesize // blocksize)
-        dat_file.seek((maxseekpoint - 1) * blocksize)
-    elif filesize:
-        # maxseekpoint = blocksize % filesize
+    if file_size > block_size:
+        max_seek_point = (file_size // block_size)
+        dat_file.seek((max_seek_point - 1) * block_size)
+    elif file_size:
         dat_file.seek(0, 0)
     lines = dat_file.readlines()
     if lines:
         last_line = lines[-1].strip()
-    # print "last line : ", last_line
     dat_file.close()
     return last_line
 
 
-
-
-
-headers={
-    'Accept':'application/json, text/javascript, */*; q=0.01',
-    'Accept-Language':'zh-CN,zh;q=0.9',
-    'Connection':'keep-alive',
-    'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8',
-    'Host':'www.mafengwo.cn',
-    'Origin':'http://www.mafengwo.cn',
-    'Referer':'http://www.mafengwo.cn/mdd/map/10065.html',
-    'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
-    'X-Requested-With':'XMLHttpRequest',
+def header_useragent():
+    headers = {
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Accept-Language': 'zh-CN,zh;q=0.9',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'Host': 'www.mafengwo.cn',
+        'Origin': 'http://www.mafengwo.cn',
+        'Referer': 'http://www.mafengwo.cn/mdd/map/10065.html',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest',
     }
 
-userAgent = [
+    userAgent = [
         "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
         "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
         "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:38.0) Gecko/20100101 Firefox/38.0",
@@ -62,54 +58,58 @@ userAgent = [
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11",
         "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Maxthon 2.0)",
         "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; TencentTraveler 4.0)"]
+    return headers, userAgent
 
 
+if __name__ == "__main__":
+    post_url = "http://www.mafengwo.cn/mdd/base/map/getPoiList"
+    # ip_list = prepare_proxy()
+    ip_list = getProxy()
+    print("[Get_List]The valid IP: ", ip_list)
 
-post_url = "http://www.mafengwo.cn/mdd/base/map/getPoiList"
-#ua = UserAgent()
-# ip_list = prepare_proxy()
-ip_list = getProxy()
-print("[Get_List]The valid IP: ",ip_list)
+    page = 1
 
+    filePath = "./data/list_all.txt"
+    if os.access(filePath, os.F_OK):
+        print("[Get_List]Given file path is exist.")
+        page_byte = get_last_line(filePath).split()[-1]
+        # 检查是否只有表头
+        if page_byte.decode(encoding='utf-8') != "page":
+            page = int(page_byte.decode(encoding='utf-8'))
+            print("[Get_List]Already spider page :", page)
+    else:
+        with open(filePath, 'a+', encoding='utf-8') as f:
+            f.write("name\ttype_id\tid\tlat\tlng\tpage\n")
 
-
-page = 1
-
-filePath = "./data/list_all.txt"
-if os.access(filePath, os.F_OK):
-    print ("[Get_List]Given file path is exist.")
-    page_byte = get_last_line(filePath).split()[-1]
-    page = int(page_byte.decode(encoding='utf-8'))
-    print ("[Get_List]Already spider page :",page)
-else:
-    with open(filePath, 'a+',encoding='utf-8') as f:
-        f.write("name\ttype_id\tid\tlat\tlng\tpage\n")
-
-
-with open(filePath, 'a+',encoding='utf-8') as f:
-    while page <= 643:
-        param = {'mddid': '10065', 'page': page}
-        param = urllib.parse.urlencode(param)
-        param = param.encode('utf-8')
-        #headers = {'User-Agent':ua.random}
-        headers['User-Agent'] = choice(userAgent)
-        req = urllib.request.Request(post_url, param, headers=headers)
-        proxy_handler = urllib.request.ProxyHandler(choice(ip_list))
-        opener = urllib.request.build_opener(proxy_handler)
-        try:
-            response = opener.open(req)
-        except:
-            print("[Get_List]False to spider page " + str(page))
-            page -= 1
-            ip_list = prepare_proxy()
-        else:
-            print("[Get_List]Success to spider page " + str(page))
-            # 返回的是一个json格式的字符串，将字符串转为dict对象
-            data_json = json.loads(response.read().decode("utf8"))
-            list_all = data_json.get("list")
-            for loc in list_all:
-                f.write(str(loc["name"]) + "\t" + str(loc["type_id"]) + "\t" + 
-                        str(loc["id"]) + "\t" + str(loc["lat"]) + "\t" + 
-                        str(loc["lng"]) + "\t" + str(page) + "\n")
-        page += 1
-    print ("[Get_List]Done spider all the list")
+    with open(filePath, 'a+', encoding='utf-8') as f:
+        while 1:
+            param = {'mddid': '10065', 'page': page}
+            param = parse.urlencode(param)
+            param = param.encode('utf-8')
+            # headers = {'User-Agent':ua.random}
+            headers, userAgent = header_useragent()
+            headers['User-Agent'] = choice(userAgent)
+            req = request.Request(post_url, param, headers=headers)
+            proxy_handler = request.ProxyHandler(choice(ip_list))
+            opener = request.build_opener(proxy_handler)
+            try:
+                response = opener.open(req)
+            except:
+                print("[Get_List]False to spider page " + str(page))
+                page -= 1
+                ip_list = prepare_proxy()
+            else:
+                print("[Get_List]Success to spider page " + str(page))
+                # 返回的是一个json格式的字符串，将字符串转为dict对象
+                data_json = json.loads(response.read().decode("utf8"))
+                list_all = data_json.get("list")
+                # 判断是否爬完
+                if len(list_all) == 0:
+                    break
+                for loc in list_all:
+                    loc["name"].replace(' ', '')
+                    f.write(str(loc["name"]) + "\t" + str(loc["type_id"]) + "\t" +
+                            str(loc["id"]) + "\t" + str(loc["lat"]) + "\t" +
+                            str(loc["lng"]) + "\t" + str(page) + "\n")
+            page += 1
+        print("[Get_List]Done spider all the list")

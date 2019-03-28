@@ -5,61 +5,217 @@
 @Description: 
 """
 
+import re
 import os
-from html.parser import HTMLParser  
+import sys
+import json
+import copy
+from random import choice
+from urllib import request
+from proxy_github import getProxy
+from html.parser import HTMLParser
+from head_useragent import head_useragent
 
 
-class MyHTMLParser(HTMLParser):   
-    def __init__(self):   
-        HTMLParser.__init__(self)   
+class MyHTMLParser(HTMLParser):
+    def __init__(self):
+        HTMLParser.__init__(self)
         self.href = []
-        self.target = []  
-    def handle_starttag(self, tag, attrs):   
-        #print "Encountered the beginning of a %s tag" % tag   
-        if tag == "a":   
-            if len(attrs) == 0:   
-                pass   
-            else:   
-                for (variable, value) in attrs:   
-                    if variable == "href":   
+        self.target = []
+
+    def handle_starttag(self, tag, attrs):
+        # print "Encountered the beginning of a %s tag" % tag
+        if tag == "a":
+            if len(attrs) == 0:
+                pass
+            else:
+                for (variable, value) in attrs:
+                    if variable == "href":
                         self.href.append(value)
-                    if variable == "title":   
+                    if variable == "title":
                         self.target.append(value)
-                        
-def get_last_line(inputfile):
-    filesize = os.path.getsize(inputfile)
-    blocksize = 1024
-    dat_file = open(inputfile, 'rb')
+
+
+def head_useragent():
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
+    }
+
+    userAgent = [
+        "Mozilla/5.0 (Linux; Android 8.1.0; PAHM00 Build/OPM1.171019.026; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/71.0.3578.83 Mobile Safari/537.36 MicroMessenger/6.7.3.1360(0x2607033B) NetType/WIFI Language/en Process/toolsmp"
+        "Mozilla/5.0 (Linux; U; Android 8.1.0; zh-cn; BLA-AL00 Build/HUAWEIBLA-AL00) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.132 MQQBrowser/8.9 Mobile Safari/537.36",
+        "Mozilla/5.0 (Linux; Android 8.1.0; ALP-AL00 Build/HUAWEIALP-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/63.0.3239.83 Mobile Safari/537.36 T7/10.13 baiduboxapp/10.13.0.11 (Baidu; P1 8.1.0)",
+        "Mozilla/5.0 (Linux; Android 6.0.1; OPPO A57 Build/MMB29M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/63.0.3239.83 Mobile Safari/537.36 T7/10.13 baiduboxapp/10.13.0.10 (Baidu; P1 6.0.1)",
+        "Mozilla/5.0 (Linux; Android 8.1; EML-AL00 Build/HUAWEIEML-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/53.0.2785.143 Crosswalk/24.53.595.0 XWEB/358 MMWEBSDK/23 Mobile Safari/537.36 MicroMessenger/6.7.2.1340(0x2607023A) NetType/4G Language/zh_CN",
+        "Mozilla/5.0 (Linux; Android 8.0; MHA-AL00 Build/HUAWEIMHA-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.132 MQQBrowser/6.2 TBS/044304 Mobile Safari/537.36 MicroMessenger/6.7.3.1360(0x26070333) NetType/NON_NETWORK Language/zh_CN Process/tools",
+        "Mozilla/5.0 (Linux; U; Android 4.1.2; zh-cn; HUAWEI MT1-U06 Build/HuaweiMT1-U06) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30 baiduboxapp/042_2.7.3_diordna_8021_027/IEWAUH_61_2.1.4_60U-1TM+IEWAUH/7300001a/91E050E40679F078E51FD06CD5BF0A43%7C544176010472968/1",
+        "Mozilla/5.0 (Linux; Android 8.0; MHA-AL00 Build/HUAWEIMHA-AL00; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.132 MQQBrowser/6.2 TBS/044304 Mobile Safari/537.36 MicroMessenger/6.7.3.1360(0x26070333) NetType/4G Language/zh_CN Process/tools",
+        "Mozilla/5.0 (Linux; U; Android 8.0.0; zh-CN; BAC-AL00 Build/HUAWEIBAC-AL00) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.108 UCBrowser/11.9.4.974 UWS/2.13.1.48 Mobile Safari/537.36 AliApp(DingTalk/4.5.11) com.alibaba.android.rimet/10487439 Channel/227200 language/zh-CN",
+        "Mozilla/5.0 (Linux; U; Android 8.1.0; zh-CN; BLA-AL00 Build/HUAWEIBLA-AL00) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.108 UCBrowser/11.9.4.974 UWS/2.13.1.48 Mobile Safari/537.36 AliApp(DingTalk/4.5.11) com.alibaba.android.rimet/10487439 Channel/227200 language/zh-CN",
+        "Mozilla/5.0 (Linux; Android 5.1.1; vivo X6S A Build/LMY47V; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/57.0.2987.132 MQQBrowser/6.2 TBS/044207 Mobile Safari/537.36 MicroMessenger/6.7.3.1340(0x26070332) NetType/4G Language/zh_CN Process/tools",
+    ]
+    return headers, userAgent
+
+
+def get_last_line(input_file):
+    file_size = os.path.getsize(input_file)
+    block_size = 1024
+    dat_file = open(input_file, 'rb')
     last_line = ""
-    if filesize > blocksize:
-        maxseekpoint = (filesize // blocksize)
-        dat_file.seek((maxseekpoint - 1) * blocksize)
-    elif filesize:
-        # maxseekpoint = blocksize % filesize
+    if file_size > block_size:
+        max_seek_point = (file_size // block_size)
+        dat_file.seek((max_seek_point - 1) * block_size)
+    elif file_size:
         dat_file.seek(0, 0)
     lines = dat_file.readlines()
     if lines:
         last_line = lines[-1].strip()
-    # print "last line : ", last_line
     dat_file.close()
     return last_line
-                     
-if __name__ == "__main__":   
-    html_code = "    <div class=\"mod mod-innerScenic\" data-cs-p=\"\u5185\u90e8\u666f\u70b9\">\n        <div class=\"mhd\">\u5185\u90e8\u666f\u70b9<\/div>\n        <div class=\"mbd\">\n            <ul class=\"clearfix\">\n                    <li>\n        <a href=\"\/poi\/6627770.html\" target=\"_blank\" title=\"\u89d2\u697c\">\n            <img src=\"http:\/\/b3-q.mafengwo.net\/s10\/M00\/55\/F4\/wKgBZ1ms5_aAbfDpAAFQz9xtL5417.jpeg?imageMogr2%2Fthumbnail%2F%21235x150r%2Fgravity%2FCenter%2Fcrop%2F%21235x150%2Fquality%2F100\" width=\"235\" height=\"150\"\/>\n            <span class=\"num num-top\">1<\/span>\n            <div class=\"info\">\n                <h3>\u89d2\u697c<\/h3>\n                <span><em>15696<\/em>\u4eba\u53bb\u8fc7<\/span>\n            <\/div>\n        <\/a>\n    <\/li>\n    <li>\n        <a href=\"\/poi\/21463.html\" target=\"_blank\" title=\"\u5348\u95e8\">\n            <img src=\"http:\/\/b1-q.mafengwo.net\/s11\/M00\/0A\/C4\/wKgBEFtZZZmAWOpuAA6mTlMGjzU180.png?imageMogr2%2Fthumbnail%2F%21235x150r%2Fgravity%2FCenter%2Fcrop%2F%21235x150%2Fquality%2F100\" width=\"235\" height=\"150\"\/>\n            <span class=\"num num-top\">2<\/span>\n            <div class=\"info\">\n                <h3>\u5348\u95e8<\/h3>\n                <span><em>35335<\/em>\u4eba\u53bb\u8fc7<\/span>\n            <\/div>\n        <\/a>\n    <\/li>\n    <li>\n        <a href=\"\/poi\/6627769.html\" target=\"_blank\" title=\"\u6545\u5bab\u535a\u7269\u9662-\u73cd\u5b9d\u9986\">\n            <img src=\"http:\/\/n3-q.mafengwo.net\/s8\/M00\/52\/DB\/wKgBpVUK8yiAKyCGABjlVHOSOPY11.jpeg?imageMogr2%2Fthumbnail%2F%21235x150r%2Fgravity%2FCenter%2Fcrop%2F%21235x150%2Fquality%2F100\" width=\"235\" height=\"150\"\/>\n            <span class=\"num num-top\">3<\/span>\n            <div class=\"info\">\n                <h3>\u6545\u5bab\u535a\u7269\u9662-\u73cd...<\/h3>\n                <span><em>9272<\/em>\u4eba\u53bb\u8fc7<\/span>\n            <\/div>\n        <\/a>\n    <\/li>\n    <li>\n        <a href=\"\/poi\/6627771.html\" target=\"_blank\" title=\"\u6545\u5bab\u4e5d\u9f99\u58c1\">\n            <img src=\"http:\/\/n4-q.mafengwo.net\/s9\/M00\/DE\/8A\/wKgBs1gYgWWAS3QeAAQP53ucRnk00.jpeg?imageMogr2%2Fthumbnail%2F%21235x150r%2Fgravity%2FCenter%2Fcrop%2F%21235x150%2Fquality%2F100\" width=\"235\" height=\"150\"\/>\n            <span class=\"num num-top\">4<\/span>\n            <div class=\"info\">\n                <h3>\u6545\u5bab\u4e5d\u9f99\u58c1<\/h3>\n                <span><em>13088<\/em>\u4eba\u53bb\u8fc7<\/span>\n            <\/div>\n        <\/a>\n    <\/li>\n    <li>\n        <a href=\"\/poi\/6627768.html\" target=\"_blank\" title=\"\u6545\u5bab\u535a\u7269\u9662-\u5fa1\u82b1\u56ed\">\n            <img src=\"http:\/\/b1-q.mafengwo.net\/s6\/M00\/8A\/F8\/wKgB4lKO1IeAaOB4AAT7_xDN9aU71.jpeg?imageMogr2%2Fthumbnail%2F%21235x150r%2Fgravity%2FCenter%2Fcrop%2F%21235x150%2Fquality%2F100\" width=\"235\" height=\"150\"\/>\n            <span class=\"num num-top\">5<\/span>\n            <div class=\"info\">\n                <h3>\u6545\u5bab\u535a\u7269\u9662-\u5fa1...<\/h3>\n                <span><em>10728<\/em>\u4eba\u53bb\u8fc7<\/span>\n            <\/div>\n        <\/a>\n    <\/li>\n    <li>\n        <a href=\"\/poi\/834363.html\" target=\"_blank\" title=\"\u592a\u548c\u6bbf\">\n            <img src=\"http:\/\/b4-q.mafengwo.net\/s11\/M00\/59\/D1\/wKgBEFsCnYGAQKs5ABUaUPT8QeM05.jpeg?imageMogr2%2Fthumbnail%2F%21235x150r%2Fgravity%2FCenter%2Fcrop%2F%21235x150%2Fquality%2F100\" width=\"235\" height=\"150\"\/>\n            <span class=\"num num-top\">6<\/span>\n            <div class=\"info\">\n                <h3>\u592a\u548c\u6bbf<\/h3>\n                <span><em>3321<\/em>\u4eba\u53bb\u8fc7<\/span>\n            <\/div>\n        <\/a>\n    <\/li>\n    <li>\n        <a href=\"\/poi\/6627806.html\" target=\"_blank\" title=\"\u592a\u548c\u95e8\">\n            <img src=\"http:\/\/n2-q.mafengwo.net\/s11\/M00\/D4\/09\/wKgBEFr1UzyASeogAAdqHgxw3Uo23.jpeg?imageMogr2%2Fthumbnail%2F%21235x150r%2Fgravity%2FCenter%2Fcrop%2F%21235x150%2Fquality%2F100\" width=\"235\" height=\"150\"\/>\n            <span class=\"num num-top\">7<\/span>\n            <div class=\"info\">\n                <h3>\u592a\u548c\u95e8<\/h3>\n                <span><em>2167<\/em>\u4eba\u53bb\u8fc7<\/span>\n            <\/div>\n        <\/a>\n    <\/li>\n    <li>\n        <a href=\"\/poi\/849540.html\" target=\"_blank\" title=\"\u4e7e\u6e05\u5bab\">\n            <img src=\"http:\/\/p3-q.mafengwo.net\/s9\/M00\/36\/73\/wKgBs1cCLFaAHVt4ACesywxFAMQ46.jpeg?imageMogr2%2Fthumbnail%2F%21235x150r%2Fgravity%2FCenter%2Fcrop%2F%21235x150%2Fquality%2F100\" width=\"235\" height=\"150\"\/>\n            <span class=\"num num-top\">8<\/span>\n            <div class=\"info\">\n                <h3>\u4e7e\u6e05\u5bab<\/h3>\n                <span><em>1802<\/em>\u4eba\u53bb\u8fc7<\/span>\n            <\/div>\n        <\/a>\n    <\/li>\n\n            <\/ul>\n        <\/div>\n                    <div class=\"more more-subpoi\">\n                <a class=\"btn-subpoi\" data-page=\"1\">\u67e5\u770b\u66f4\u591a<\/a>\n            <\/div>\n            <\/div>\n<style>\n    .mod-innerScenic .more {\n        margin-top: 20px;\n        text-align: center;\n    }\n    .mod-innerScenic .more a {\n        display: inline-block;\n        width: 160px;\n        height: 50px;\n        background-color: #fff;\n        border: 1px solid #fc9c27;\n        line-height: 50px;\n        color: #ff9d00;\n        font-size: 14px;\n        border-radius: 4px;\n        text-align: center;\n    }\n    .mod-innerScenic .num {\n        width: 40px;\n    }\n<\/style>"
-    hp = MyHTMLParser()   
-    hp.feed(html_code)   
-    hp.close()   
-    print(hp.href)
-    print(hp.target)  
-    
-    page = 1
 
-    filePath = "./data/list_all.txt"
-    if os.access(filePath, os.F_OK):
-        print ("[Get_List]Given file path is exist.")
-        page_byte = get_last_line(filePath).split()[-1]
-        page = int(page_byte.decode(encoding='utf-8'))
-        print ("[Get_List]Already spider page :",page)
+
+def get_list(input_file):
+    list_loc = []
+    with open(input_file, 'r', encoding='utf-8') as f:
+        next(f)
+        for line in f.readlines():
+            line_list = line.strip().split()
+            list_loc.append((line_list[0], line_list[1], line_list[2], line_list[3], line_list[4], line_list[5]))
+    return list_loc
+
+
+def get_url():
+    get_url_base = "http://pagelet.mafengwo.cn/poi/pagelet/poiSubPoiApi"
+
+    json_base_1 = "?params=%7B%22poi_id%22%3A%22"
+    json_base_2 = "%22%2C%22page%22%3A"
+    json_base_3 = "%7D"
+
+    json_str = json_base_1 + str(poi[2]) + json_base_2 + str(sub_page) + json_base_3
+    url_complete = get_url_base + json_str
+
+    return url_complete
+
+
+if __name__ == "__main__":
+
+    headers, userAgent = head_useragent()
+
+    # 判断不带子景点的景点目录文件是否存在，如果存在则读入
+    initFilePath = "./data/list_all.txt"
+    if os.access(initFilePath, os.F_OK):
+        print("[Get_Comments]Basic file is exist.")
     else:
-        with open(filePath, 'a+',encoding='utf-8') as f:
-            f.write("name\ttype_id\tid\tlat\tlng\tpage\n")
+        print("[Get_Comments]Basic file is not exist, please run getList.py first.")
+        sys.exit(0)
+
+    list_loc = get_list(initFilePath)
+
+    # 判断带子景点的景点目录是否存在，如果不存在则创建并且写入表头，如果存在则读入写入的位置
+    filePath = "./data/list_all_sub.txt"
+    fatherId = 0
+    sub_page = 0
+    if os.access(filePath, os.F_OK):
+        print("[Get_List]Given file path is exist.")
+        # 默认最后一行是子景点，读入此景点的父节点以及父景点写入的子景点页数（从1开始）
+        # 读入已经爬取到的父景点所在页数，父景点的子景点页数以及父景点的ID
+        sub_page_byte = get_last_line(filePath).split()[-1]
+        # 判断是否只有表头没有数据
+        if sub_page_byte.decode(encoding='utf-8') == "data":
+            print("[Get_List]The file is exist but no data.")
+        else:
+            fatherId_byte = get_last_line(filePath).split()[-2]
+            page_byte = get_last_line(filePath).split()[5]
+            page = int(page_byte.decode(encoding='utf-8'))
+            sub_page = int(sub_page_byte.decode(encoding='utf-8'))
+            fatherId = int(fatherId_byte.decode(encoding='utf-8'))
+            # 判断最后一行内容是子景点还是父景点，如果是父景点，则将fatherId置为该景点
+            if fatherId == 0:
+                fatherId_byte = get_last_line(filePath).split()[2]
+                fatherId = int(fatherId_byte.decode(encoding='utf-8'))
+            print("[Get_List]Already spider page :", page)
+            print("[Get_List]Already spider sub_page :", sub_page)
+    else:
+        with open(filePath, 'a+', encoding='utf-8') as f:
+            f.write("name\ttype_id\tid\tlat\tlng\tpage\tfather_name\tfather_id\tsub_page\n")
+
+    # 删掉之前爬过的父景点
+    if fatherId != 0:
+        list_loc_copy = copy.deepcopy(list_loc)
+        for poi in list_loc_copy:
+            if poi[2] != str(fatherId):
+                list_loc.remove(poi)
+            else:
+                break
+    print(list_loc)
+
+    ip_list = getProxy()
+
+    # 循环对每一个景点判断是否有子景点
+    for poi in list_loc:
+        print("[Get_List]Start to spider:" + str(poi[2] + " Page " + str(poi[-1])))
+        hasMore = True  # 判断该父景点是否还有下一页子景点
+        with open(filePath, 'a+', encoding='utf-8') as f:
+            # 天才的想法：
+            # 如果不是第一次进这个循环（fatherId就是列表第一项），那么需要输入父节点信息；
+            # 如果是第一次进来，但是文件只有表头（fatherId == 0），也需要输入父节点信息；
+            if poi[2] != str(fatherId):
+                f.write(str(poi[0]) + "\t" + str(poi[1]) + "\t" +
+                        str(poi[2]) + "\t" + str(poi[3]) + "\t" +
+                        str(poi[4]) + "\t" + str(poi[5]) + "\t0\t0\t0\n")
+        while hasMore:
+            # 准备请求内容以及请求URL
+            sub_page += 1
+            get_url = get_url(poi[2], sub_page)
+            headers['User-Agent'] = choice(userAgent)
+            req = request.Request(get_url, headers=headers)
+            proxy_handler = request.ProxyHandler(choice(ip_list))
+            opener = request.build_opener(proxy_handler)
+
+            # 判断该景点（父景点）是否有子景点，如果有则继续，没有则跳过
+            try:
+                response = opener.open(req)
+            except:
+                print("[Get_List]False to spider " + str(poi[2]) + " Page " + str(poi[-1]) + " sub_page " + str(
+                    sub_page))
+                sub_page -= 1
+                ip_list = getProxy()
+            else:
+                # 返回的是一个json格式的字符串，将字符串转为dict对象
+                data_json = json.loads(response.read().decode("utf8"))
+                data_all = data_json.get("data")
+                html = data_all["html"]
+                # 如果没有controller_data说明该景点（分类不是景点的）没有子景点
+                if "controller_data" not in data_all:
+                    print("[Get_List]This location has no sub-locations")
+                    break
+                controller_data = data_all["controller_data"]
+                # 判断是否该父景点是否还有下页
+                hasMore = controller_data["hasMore"]
+                # 得到当前父景点爬的子景点的页数
+                curPage = controller_data["curPage"]
+                hp = MyHTMLParser()
+                hp.feed(html)
+                hp.close()
+                # 分类是景点但是没有子景点的有controller_data，但是html中没有相应数据
+                if len(hp.href) == 0:
+                    print("[Get_List]This location has no sub-locations")
+                    break
+
+                for i in range(len(hp.href)):
+                    pattern = re.compile('\/poi\/(.*).html', re.IGNORECASE)
+                    sub_poi = pattern.findall(hp.href[i])[0]
+                    with open(filePath, 'a+', encoding='utf-8') as f:
+                        f.write(str(hp.target[i]) + "\t" + str(poi[1]) + "\t" +
+                                str(sub_poi) + "\t" + str(poi[3]) + "\t" +
+                                str(poi[4]) + "\t" + str(poi[5]) + "\t" +
+                                str(poi[0]) + "\t" + str(poi[2]) + "\t" +
+                                str(sub_page) + "\n")
+
+                print("[Get_List]Success to spider " + str(poi[2]) +
+                      " Page " + str(poi[-1]) +
+                      " sub_page " + str(sub_page))
+        # 爬完该父景点的所有子景点之后将sub_page置零，不放在循环开始因为第一次进入循环的时候sub_page不为零。
+        sub_page = 0
+        print("[Get_List]Finish to spider:" + str(poi[2] + " Page " + str(poi[-1])))
+    print("[Get_List]Done spider all the list")
