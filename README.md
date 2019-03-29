@@ -23,11 +23,15 @@ from fake_useragent import UserAgent
 
 ## Operation
 
-+ run `getList.py` to get all collations basic information, and fill up the `list_all.txt`.
++ run `getList.py` to get all locations' basic information, and fill up the `list_all.txt`.
 
 The proxy IP with http://www.xicidaili.com/ is obtained, and fakeUA is generated to test. After passing the test, use proxy IP and self-built UA list to access web of mafengwo http://www.mafengwo.cn/mdd/map/10065.html. After being blocked, the proxy IP is automatically retrieved to continue.
 
-+ run `getComments.py` to get all collations basic information, and fill up the `list_all.txt`.
++ run `getList_subpoi.py` to get all locations' basic information including sub-locations, and fill up the `list_all_sub.txt`.
+
+The proxy IP with http://www.xicidaili.com/ is obtained, and fakeUA is generated to test. After passing the test, use proxy IP and self-built UA list to access web of mafengwo http://www.mafengwo.cn/mdd/map/10065.html. After being blocked, the proxy IP is automatically retrieved to continue.
+
++ run `getComments.py` to get all locations' basic information, and fill up the `comment_all.txt`.
 
 Obtain the commentary data for each location (because of the restrictions of API, with the effort, you can climb up to 600 comments per site)
 
