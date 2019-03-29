@@ -111,7 +111,10 @@ def get_list(input_file):
         next(f)
         for line in f.readlines():
             line_list = line.strip().split()
-            list_loc.append((line_list[0], line_list[1], line_list[2], line_list[3], line_list[4], line_list[5]))
+            item_list = []
+            for item in line_list:
+                item_list.append(item)
+            list_loc.append(tuple(item_list))
     return list_loc
 
 
@@ -216,6 +219,33 @@ def prepare_request(poiid, sub_page, ip_list):
     return opener, req
 
 
+def clean_file(file_path):
+    """
+    清理一遍文档，因为有些景点本身就是一个父景点，还是其他父景点的子景点
+    :param file_path: 文件路径
+    :return: 无
+    """
+    loc_list = get_list(file_path)
+    print(loc_list)
+
+    loc_list_clean = []
+    loc_poi_clean = []
+    for poi_tuple in loc_list:
+        if poi_tuple[2] not in loc_poi_clean:
+            loc_poi_clean.append(poi_tuple[2])
+            loc_list_clean.append(poi_tuple)
+
+    with open(file_path, 'w+', encoding='utf-8') as file:
+        file.truncate()
+        file.write("name\ttype_id\tid\tlat\tlng\tpage\tfather_name\tfather_id\tsub_page\n")
+        for poi_tuple in loc_list_clean:
+            file.write(str(poi_tuple[0]) + "\t" + str(poi_tuple[1]) + "\t" +
+                       str(poi_tuple[2]) + "\t" + str(poi_tuple[3]) + "\t" +
+                       str(poi_tuple[4]) + "\t" + str(poi_tuple[5]) + "\t" +
+                       str(poi_tuple[6]) + "\t" + str(poi_tuple[7]) + "\t" +
+                       str(poi_tuple[8]) + "\n")
+
+
 if __name__ == "__main__":
 
     headers, userAgent = head_useragent()
@@ -298,3 +328,6 @@ if __name__ == "__main__":
         sub_page = 0
         print("[Get_List]Finish to spider:" + str(poi[2] + " Page " + str(poi[-1])))
     print("[Get_List]Done spider all the list")
+
+    # 因为有的景点可能既是一个独立的景点，又同时属于某一个景点的子景点，那么它就会存在两次
+    clean_file(filePath)

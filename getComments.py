@@ -7,7 +7,9 @@ Created on Sat Dec  8 11:38:43 2018
 
 import os
 import sys
+import csv
 import json
+import copy
 from random import choice
 from urllib import request, parse
 from proxy_github import getProxy
@@ -38,25 +40,19 @@ def head_useragent():
     return headers, userAgent
 
 
-def get_last_line(input_file):
+def csv_last_line(input_file):
     """"
-    读取文件的最后一行
+    读取CSV文件的最后一行
     :param input_file: 文件名
     :return: last_line
     """
-    filesize = os.path.getsize(input_file)
-    blocksize = 1024
-    dat_file = open(input_file, 'rb')
-    last_line = ""
-    if filesize > blocksize:
-        maxseekpoint = (filesize // blocksize)
-        dat_file.seek((maxseekpoint - 1) * blocksize)
-    elif filesize:
-        dat_file.seek(0, 0)
-    lines = dat_file.readlines()
-    if lines:
-        last_line = lines[-1].strip()
-    dat_file.close()
+    last_line = []
+    with open(input_file, "r", newline='', encoding='utf-8-sig') as csvfile:
+        reader = csv.reader(csvfile)
+        for line in reader:
+            if line is not "":
+                last_line = line
+
     return last_line
 
 
@@ -71,7 +67,7 @@ def get_list(input_file):
         next(f)
         for line in f.readlines():
             list = line.strip().split()
-            list_loc.append((list[0], list[2], list[5]))
+            list_loc.append((list[0], int(list[2]), int(list[5])))
     return list_loc
 
 
@@ -112,14 +108,16 @@ def get_starter(init_file_path, file_path):
     page = 0
     if os.access(file_path, os.F_OK):
         print("[Get_Comments]Given file path is exist.")
-        last_line_list = get_last_line(file_path).split()
-        poiid = int(last_line_list[0].decode(encoding='utf-8'))
-        page = int(last_line_list[1].decode(encoding='utf-8'))
+        last_line_list = csv_last_line(file_path)
+        poiid = int(last_line_list[0])
+        page = int(last_line_list[1])
         print("[Continue]Already Spider POI :", poiid)
         print("[Continue]Already Spider Page :", page)
-        for i in range(len(list_loc)):
-            if int(list_loc[0][1]) != poiid:
-                del list_loc[0]
+
+        list_loc_copy = copy.deepcopy(list_loc)
+        for poi in list_loc_copy:
+            if poi[1] != poiid:
+                list_loc.remove(poi)
             else:
                 break
     else:
@@ -132,7 +130,7 @@ if __name__ == "__main__":
 
     headers, userAgent = head_useragent()
     initFilePath = "./data/list_all_sub.txt"
-    filePath = "./data/comment_all.txt"
+    filePath = "./data/comment_all.csv"
 
     list_loc, page = get_starter(initFilePath, filePath)
     total_number = len(list_loc)
@@ -140,12 +138,12 @@ if __name__ == "__main__":
     ip_list = getProxy()
 
     for i in range(total_number):
-        with open(filePath, 'a+', encoding='utf-8') as f:
+        with open(filePath, 'a+', newline='', encoding='utf-8-sig') as csvfile:
+            writer = csv.writer(csvfile)
             hasMore = True
             while hasMore:
                 page += 1
                 poiid = list_loc[i][1]
-
                 full_url = get_url(poiid, page)
                 headers['User-Agent'] = choice(userAgent)
                 req = request.Request(full_url, headers=headers)
@@ -172,8 +170,7 @@ if __name__ == "__main__":
                     data = data_json.get("data")
                     if data["page"]["next"] is True:
                         for loc in data["list"]:
-                            f.write(str(poiid) + "\t" + str(data["page"]["no"]) + "\t" +
-                                    str(loc["comment"]) + "\n")
+                            writer.writerow([poiid, data["page"]["no"], loc["comment"]])
                     else:
                         print("[Get_Comments]Done write file " + str(list_loc[i][0]) + " page number is " + str(page))
                         hasMore = False

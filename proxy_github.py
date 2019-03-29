@@ -6,9 +6,9 @@
 """
 
 import json
-import telnetlib
-import requests
 import random
+import requests
+import telnetlib
 
 
 def get_proxy(host, port, type):
