@@ -27,11 +27,15 @@ from fake_useragent import UserAgent
 
 The proxy IP with http://www.xicidaili.com/ is obtained, and fakeUA is generated to test. After passing the test, use proxy IP and self-built UA list to access web of mafengwo http://www.mafengwo.cn/mdd/map/10065.html. After being blocked, the proxy IP is automatically retrieved to continue.
 
-+ run `getList_subpoi.py` to get all locations' basic information including sub-locations, and fill up the `list_all_sub.txt`.
+Please attention that tnere are nearly 10 thousands locations in Beijing and a large mount of locations have no comment or few comments, so I abondon the locations which have less than 5 comments.
+
++ run `getList_subpoi.py` to get all locations' basic information **including the sub-locations("角楼" is a sub location of "故宫")**, and fill up the `list_all_sub.txt`.
 
 The proxy IP with http://www.xicidaili.com/ is obtained, and fakeUA is generated to test. After passing the test, use proxy IP and self-built UA list to access web of mafengwo http://www.mafengwo.cn/mdd/map/10065.html. After being blocked, the proxy IP is automatically retrieved to continue.
 
-+ run `getComments.py` to get all locations' basic information, and fill up the `comment_all.txt`.
+Please attention that tnere are lots of sub locations are seldom marked as visited, so I save the sublocations' informations only if it is marked by more than five visitors.
+
++ run `getComments.py` to get all locations' comments, and fill up the `comment_all.txt`.
 
 Obtain the commentary data for each location (because of the restrictions of API, with the effort, you can climb up to 600 comments per site)
 
@@ -50,6 +54,20 @@ name	type_id	id	lat	lng	page
 圆明园	3	6427	40.007905	116.303579	1
 南锣鼓巷	3	3511	39.93744	116.403138	1
 798艺术区	3	21100	39.985041	116.494624	1
+```
+
+* **list_all_subpoi.txt**
+```
+name	type_id	id	lat	lng	page	father_name	father_id	sub_page
+故宫	3	3474	39.916698	116.397185	1	0	0	0
+角楼	3	6627770	39.916698	116.397185	1	故宫	3474	1
+午门	3	21463	39.916698	116.397185	1	故宫	3474	1
+故宫博物院-珍宝馆	3	6627769	39.916698	116.397185	1	故宫	3474	1
+故宫九龙壁	3	6627771	39.916698	116.397185	1	故宫	3474	1
+故宫博物院-御花园	3	6627768	39.916698	116.397185	1	故宫	3474	1
+太和殿	3	834363	39.916698	116.397185	1	故宫	3474	1
+太和门	3	6627806	39.916698	116.397185	1	故宫	3474	1
+乾清宫	3	849540	39.916698	116.397185	1	故宫	3474	1
 ```
 
 * **comment_all.txt**
