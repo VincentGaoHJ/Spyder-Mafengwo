@@ -14,17 +14,23 @@ from random import choice
 from urllib import request
 from proxy_github import getProxy
 from html.parser import HTMLParser
-from head_useragent import head_useragent
 
 
 class MyHTMLParser(HTMLParser):
+    """
+    获得html中的子景点的poiid，子景点的中文名字，以及由多少人去过这个景点。
+    """
+
     def __init__(self):
         HTMLParser.__init__(self)
         self.href = []
         self.target = []
+        self.people = []
+        self.a_text = False
 
     def handle_starttag(self, tag, attrs):
         # print "Encountered the beginning of a %s tag" % tag
+        # 获得html中的子景点的poiid，子景点的中文名字
         if tag == "a":
             if len(attrs) == 0:
                 pass
@@ -34,6 +40,17 @@ class MyHTMLParser(HTMLParser):
                         self.href.append(value)
                     if variable == "title":
                         self.target.append(value)
+        # 获得html中的子景点有多少人去过这个景点
+        if tag == "em":
+            self.a_text = True
+
+    def handle_endtag(self, tag):
+        if tag == 'em':
+            self.a_text = False
+
+    def handle_data(self, data):
+        if self.a_text:
+            self.people.append(data)
 
 
 def head_useragent():
@@ -84,14 +101,20 @@ def get_list(input_file):
     return list_loc
 
 
-def get_url():
+def get_url(poi, sub_page):
+    """
+    用来构建一个完整的请求url
+    :param poi: 父景点的poiid
+    :param sub_page: 要爬取父景点的子景点页数
+    :return: url_complete(一个完整的请求url)
+    """
     get_url_base = "http://pagelet.mafengwo.cn/poi/pagelet/poiSubPoiApi"
 
     json_base_1 = "?params=%7B%22poi_id%22%3A%22"
     json_base_2 = "%22%2C%22page%22%3A"
     json_base_3 = "%7D"
 
-    json_str = json_base_1 + str(poi[2]) + json_base_2 + str(sub_page) + json_base_3
+    json_str = json_base_1 + str(poi) + json_base_2 + str(sub_page) + json_base_3
     url_complete = get_url_base + json_str
 
     return url_complete
@@ -154,7 +177,6 @@ if __name__ == "__main__":
     # 循环对每一个景点判断是否有子景点
     for poi in list_loc:
         print("[Get_List]Start to spider:" + str(poi[2] + " Page " + str(poi[-1])))
-        hasMore = True  # 判断该父景点是否还有下一页子景点
         with open(filePath, 'a+', encoding='utf-8') as f:
             # 天才的想法：
             # 如果不是第一次进这个循环（fatherId就是列表第一项），那么需要输入父节点信息；
@@ -163,19 +185,21 @@ if __name__ == "__main__":
                 f.write(str(poi[0]) + "\t" + str(poi[1]) + "\t" +
                         str(poi[2]) + "\t" + str(poi[3]) + "\t" +
                         str(poi[4]) + "\t" + str(poi[5]) + "\t0\t0\t0\n")
+        hasMore = True  # 判断该父景点是否还有下一页子景点
         while hasMore:
             # 准备请求内容以及请求URL
             sub_page += 1
-            get_url = get_url(poi[2], sub_page)
+            url = get_url(poi[2], sub_page)
             headers['User-Agent'] = choice(userAgent)
-            req = request.Request(get_url, headers=headers)
+            req = request.Request(url, headers=headers)
             proxy_handler = request.ProxyHandler(choice(ip_list))
             opener = request.build_opener(proxy_handler)
 
             # 判断该景点（父景点）是否有子景点，如果有则继续，没有则跳过
             try:
                 response = opener.open(req)
-            except:
+            except Exception as e:
+                print("[Get_List]Error ", e)
                 print("[Get_List]False to spider " + str(poi[2]) + " Page " + str(poi[-1]) + " sub_page " + str(
                     sub_page))
                 sub_page -= 1
@@ -202,8 +226,14 @@ if __name__ == "__main__":
                     print("[Get_List]This location has no sub-locations")
                     break
 
+                if not len(hp.href) == len(hp.target) == len(hp.people):
+                    raise Exception("[Get_List]子景点信息不匹配")
+
                 for i in range(len(hp.href)):
-                    pattern = re.compile('\/poi\/(.*).html', re.IGNORECASE)
+                    # 子景点去过的人数少于5个就不写入文件中
+                    if int(hp.people[i]) <= 5:
+                        continue
+                    pattern = re.compile("/poi/(.*).html", re.IGNORECASE)
                     sub_poi = pattern.findall(hp.href[i])[0]
                     with open(filePath, 'a+', encoding='utf-8') as f:
                         f.write(str(hp.target[i]) + "\t" + str(poi[1]) + "\t" +

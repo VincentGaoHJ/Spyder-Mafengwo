@@ -8,29 +8,15 @@
 import os
 import json
 from random import choice
-from proxy import prepare_proxy
 from urllib import request, parse
 from proxy_github import getProxy
 
 
-def get_last_line(input_file):
-    file_size = os.path.getsize(input_file)
-    block_size = 1024
-    dat_file = open(input_file, 'rb')
-    last_line = ""
-    if file_size > block_size:
-        max_seek_point = (file_size // block_size)
-        dat_file.seek((max_seek_point - 1) * block_size)
-    elif file_size:
-        dat_file.seek(0, 0)
-    lines = dat_file.readlines()
-    if lines:
-        last_line = lines[-1].strip()
-    dat_file.close()
-    return last_line
-
-
 def header_useragent():
+    """
+    提供完整的headers和可供选择的User-Agent
+    :return: headers & userAgent
+    """
     headers = {
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'zh-CN,zh;q=0.9',
@@ -61,55 +47,106 @@ def header_useragent():
     return headers, userAgent
 
 
+def get_last_line(input_file):
+    """
+    读取文件的最后一行
+    :param input_file: 文件名
+    :return: last_line
+    """
+    file_size = os.path.getsize(input_file)
+    block_size = 1024
+    dat_file = open(input_file, 'rb')
+    last_line = ""
+    if file_size > block_size:
+        max_seek_point = (file_size // block_size)
+        dat_file.seek((max_seek_point - 1) * block_size)
+    elif file_size:
+        dat_file.seek(0, 0)
+    lines = dat_file.readlines()
+    if lines:
+        last_line = lines[-1].strip()
+    dat_file.close()
+    return last_line
+
+
+def get_starter(file_path):
+    """
+    读取文件中最后一行的内容并且判断已经爬取到的页数
+    :param file_path: 文件所在路径
+    :return: page_num(已经爬取到的页数)
+    """
+    page_num = 1
+    if os.access(file_path, os.F_OK):
+        print("[Get_List]Given file path is exist.")
+        page_byte = get_last_line(file_path).split()[-1]
+        # 检查是否只有表头
+        if page_byte.decode(encoding='utf-8') != "page":
+            page_num = int(page_byte.decode(encoding='utf-8'))
+            print("[Get_List]Already spider page :", page)
+    else:
+        with open(file_path, 'a+', encoding='utf-8') as f:
+            f.write("name\ttype_id\tid\tlat\tlng\tpage\n")
+    return page_num
+
+
+def prepare_request(paras, ip_list):
+    """
+    构建完整的请求内容，其中包括参数，headers和代理IP
+    :param paras: 请求参数
+    :param ip_list: 可用的代理IP
+    :return: opener, req
+    """
+    # 构建req
+    paras = parse.urlencode(paras)
+    paras = paras.encode('utf-8')
+    # headers = {'User-Agent':ua.random}
+    headers, user_agent = header_useragent()
+    headers['User-Agent'] = choice(user_agent)
+    req = request.Request(post_url, paras, headers=headers)
+
+    # 构建opener
+    # 基本的urlopen()方法不支持代理、cookie等其他的HTTP/HTTPS高级功能
+    # 需要通过urllib2.build_opener()方法来使用这些处理器对象
+    proxy_handler = request.ProxyHandler(choice(ip_list))
+    opener = request.build_opener(proxy_handler)
+    return opener, req
+
+
 if __name__ == "__main__":
     post_url = "http://www.mafengwo.cn/mdd/base/map/getPoiList"
-    # ip_list = prepare_proxy()
+
     ip_list = getProxy()
     print("[Get_List]The valid IP: ", ip_list)
 
-    page = 1
-
     filePath = "./data/list_all.txt"
-    if os.access(filePath, os.F_OK):
-        print("[Get_List]Given file path is exist.")
-        page_byte = get_last_line(filePath).split()[-1]
-        # 检查是否只有表头
-        if page_byte.decode(encoding='utf-8') != "page":
-            page = int(page_byte.decode(encoding='utf-8'))
-            print("[Get_List]Already spider page :", page)
-    else:
-        with open(filePath, 'a+', encoding='utf-8') as f:
-            f.write("name\ttype_id\tid\tlat\tlng\tpage\n")
+    page = get_starter(filePath)
 
-    with open(filePath, 'a+', encoding='utf-8') as f:
-        while 1:
-            param = {'mddid': '10065', 'page': page}
-            param = parse.urlencode(param)
-            param = param.encode('utf-8')
-            # headers = {'User-Agent':ua.random}
-            headers, userAgent = header_useragent()
-            headers['User-Agent'] = choice(userAgent)
-            req = request.Request(post_url, param, headers=headers)
-            proxy_handler = request.ProxyHandler(choice(ip_list))
-            opener = request.build_opener(proxy_handler)
-            try:
-                response = opener.open(req)
-            except:
-                print("[Get_List]False to spider page " + str(page))
-                page -= 1
-                ip_list = prepare_proxy()
-            else:
-                print("[Get_List]Success to spider page " + str(page))
-                # 返回的是一个json格式的字符串，将字符串转为dict对象
-                data_json = json.loads(response.read().decode("utf8"))
-                list_all = data_json.get("list")
-                # 判断是否爬完
-                if len(list_all) == 0:
-                    break
-                for loc in list_all:
-                    loc["name"].replace(' ', '')
-                    f.write(str(loc["name"]) + "\t" + str(loc["type_id"]) + "\t" +
-                            str(loc["id"]) + "\t" + str(loc["lat"]) + "\t" +
-                            str(loc["lng"]) + "\t" + str(page) + "\n")
-            page += 1
-        print("[Get_List]Done spider all the list")
+    while page < 1000:
+        param = {'mddid': '10065', 'page': page}
+        opener, req = prepare_request(param, ip_list)
+        # 使用自定义的opener对象，调用open()方法来发送请求
+        try:
+            response = opener.open(req)
+        except Exception as e:
+            print("[Get_List]Error ", e)
+            print("[Get_List]False to spider page " + str(page))
+            page -= 1
+            ip_list = getProxy()
+        else:
+            print("[Get_List]Success to spider page " + str(page))
+            # 解压json，转换为dict对象
+            data_json = json.loads(response.read().decode("utf8"))
+            list_all = data_json.get("list")
+            # 判断是否爬完
+            if len(list_all) == 0:
+                break
+            for loc in list_all:
+                # 保存评论数大于5的景点信息
+                if int(loc["num_comment"]) >= 5:
+                    name = loc["name"].replace(' ', '')
+                    with open(filePath, 'a+', encoding='utf-8') as f:
+                        f.write(str(name) + "\t" + str(loc["type_id"]) + "\t" +
+                                str(loc["id"]) + "\t" + str(loc["lat"]) + "\t" +
+                                str(loc["lng"]) + "\t" + str(page) + "\n")
+        page += 1
+    print("[Get_List]Done spider all the list")
