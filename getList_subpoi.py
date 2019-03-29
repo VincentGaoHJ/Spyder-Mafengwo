@@ -54,6 +54,10 @@ class MyHTMLParser(HTMLParser):
 
 
 def head_useragent():
+    """
+    提供完整的headers和可供选择的User-Agent
+    :return: headers & userAgent
+    """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36',
     }
@@ -75,6 +79,11 @@ def head_useragent():
 
 
 def get_last_line(input_file):
+    """
+    读取文件的最后一行
+    :param input_file: 文件名
+    :return: last_line
+    """
     file_size = os.path.getsize(input_file)
     block_size = 1024
     dat_file = open(input_file, 'rb')
@@ -92,6 +101,11 @@ def get_last_line(input_file):
 
 
 def get_list(input_file):
+    """
+    读取文件，将每一个景点（父景点）的所有信息作为一个元组保存入列表中
+    :param input_file: 文件路径
+    :return: list_loc（所有父景点的列表）
+    """
     list_loc = []
     with open(input_file, 'r', encoding='utf-8') as f:
         next(f)
@@ -120,57 +134,96 @@ def get_url(poi, sub_page):
     return url_complete
 
 
-if __name__ == "__main__":
-
-    headers, userAgent = head_useragent()
-
+def get_starter(init_file_path, file_path):
+    """
+    判断不带子景点的景点目录文件是否存在，如果存在则读入;
+    判断带子景点的景点目录是否存在，如果不存在则创建并且写入表头，如果存在则读入写入的位置;
+    删掉之前爬过的父景点
+    :param init_file_path: 父景点所在文件路径
+    :param file_path: 将要将所有景点保存入的文件路径
+    :return:
+        list_location：待爬的父景点列表
+        father_id：已经爬到的最后一个父景点的poiid（如果最后一行是表头，那么father_id=0）
+        subpage：已经爬到的最后一个父景点的子景点页数（如果最后一行是父景点或者表头，那么subpage=0）
+    """
     # 判断不带子景点的景点目录文件是否存在，如果存在则读入
-    initFilePath = "./data/list_all.txt"
-    if os.access(initFilePath, os.F_OK):
+    if os.access(init_file_path, os.F_OK):
         print("[Get_Comments]Basic file is exist.")
     else:
         print("[Get_Comments]Basic file is not exist, please run getList.py first.")
         sys.exit(0)
 
-    list_loc = get_list(initFilePath)
+    list_location = get_list(init_file_path)
 
     # 判断带子景点的景点目录是否存在，如果不存在则创建并且写入表头，如果存在则读入写入的位置
-    filePath = "./data/list_all_sub.txt"
-    fatherId = 0
-    sub_page = 0
-    if os.access(filePath, os.F_OK):
+    father_id = 0
+    subpage = 0
+    if os.access(file_path, os.F_OK):
         print("[Get_List]Given file path is exist.")
         # 默认最后一行是子景点，读入此景点的父节点以及父景点写入的子景点页数（从1开始）
         # 读入已经爬取到的父景点所在页数，父景点的子景点页数以及父景点的ID
-        sub_page_byte = get_last_line(filePath).split()[-1]
+        sub_page_byte = get_last_line(file_path).split()[-1]
         # 判断是否只有表头没有数据
         if sub_page_byte.decode(encoding='utf-8') == "data":
             print("[Get_List]The file is exist but no data.")
         else:
-            fatherId_byte = get_last_line(filePath).split()[-2]
-            page_byte = get_last_line(filePath).split()[5]
+            father_id_byte = get_last_line(file_path).split()[-2]
+            page_byte = get_last_line(file_path).split()[5]
             page = int(page_byte.decode(encoding='utf-8'))
-            sub_page = int(sub_page_byte.decode(encoding='utf-8'))
-            fatherId = int(fatherId_byte.decode(encoding='utf-8'))
+            subpage = int(sub_page_byte.decode(encoding='utf-8'))
+            father_id = int(father_id_byte.decode(encoding='utf-8'))
             # 判断最后一行内容是子景点还是父景点，如果是父景点，则将fatherId置为该景点
-            if fatherId == 0:
-                fatherId_byte = get_last_line(filePath).split()[2]
-                fatherId = int(fatherId_byte.decode(encoding='utf-8'))
+            if father_id == 0:
+                father_id_byte = get_last_line(file_path).split()[2]
+                father_id = int(father_id_byte.decode(encoding='utf-8'))
             print("[Get_List]Already spider page :", page)
-            print("[Get_List]Already spider sub_page :", sub_page)
+            print("[Get_List]Already spider sub_page :", subpage)
     else:
-        with open(filePath, 'a+', encoding='utf-8') as f:
+        with open(file_path, 'a+', encoding='utf-8') as f:
             f.write("name\ttype_id\tid\tlat\tlng\tpage\tfather_name\tfather_id\tsub_page\n")
 
     # 删掉之前爬过的父景点
-    if fatherId != 0:
-        list_loc_copy = copy.deepcopy(list_loc)
+    if father_id != 0:
+        list_loc_copy = copy.deepcopy(list_location)
         for poi in list_loc_copy:
-            if poi[2] != str(fatherId):
-                list_loc.remove(poi)
+            if poi[2] != str(father_id):
+                list_location.remove(poi)
             else:
                 break
-    print(list_loc)
+
+    return list_location, father_id, subpage
+
+
+def prepare_request(poiid, sub_page, ip_list):
+    """
+    构建opener对象以及完整的请求内容，其中包括参数，headers和代理IP
+    :param poiid: 请求参数：子景点poiid
+    :param sub_page: 请求参数：子景点页数
+    :param ip_list: 可用的代理IP
+    :return: opener, req
+    """
+
+    # 构建请求内容
+    url = get_url(poiid, sub_page)
+    headers['User-Agent'] = choice(userAgent)
+    req = request.Request(url, headers=headers)
+
+    # 构建opener
+    # 基本的urlopen()方法不支持代理、cookie等其他的HTTP/HTTPS高级功能
+    # 需要通过urllib2.build_opener()方法来使用这些处理器对象
+    proxy_handler = request.ProxyHandler(choice(ip_list))
+    opener = request.build_opener(proxy_handler)
+    return opener, req
+
+
+if __name__ == "__main__":
+
+    headers, userAgent = head_useragent()
+
+    initFilePath = "./data/list_all.txt"
+    filePath = "./data/list_all_sub.txt"
+
+    list_loc, fatherId, sub_page = get_starter(initFilePath, filePath)
 
     ip_list = getProxy()
 
@@ -189,11 +242,7 @@ if __name__ == "__main__":
         while hasMore:
             # 准备请求内容以及请求URL
             sub_page += 1
-            url = get_url(poi[2], sub_page)
-            headers['User-Agent'] = choice(userAgent)
-            req = request.Request(url, headers=headers)
-            proxy_handler = request.ProxyHandler(choice(ip_list))
-            opener = request.build_opener(proxy_handler)
+            opener, req = prepare_request(poi[2], sub_page, ip_list)
 
             # 判断该景点（父景点）是否有子景点，如果有则继续，没有则跳过
             try:
@@ -225,7 +274,7 @@ if __name__ == "__main__":
                 if len(hp.href) == 0:
                     print("[Get_List]This location has no sub-locations")
                     break
-
+                # 严谨，防止信息不匹配
                 if not len(hp.href) == len(hp.target) == len(hp.people):
                     raise Exception("[Get_List]子景点信息不匹配")
 
