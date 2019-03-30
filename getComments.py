@@ -150,7 +150,10 @@ if __name__ == "__main__":
                 proxy_handler = request.ProxyHandler(choice(ip_list))
                 opener = request.build_opener(proxy_handler)
                 try:
-                    response = opener.open(req)
+                    print("[Get_List]Try to get the answer.")
+                    # 设置timeout的原因是马蜂窝不会拒绝你的链接，但是封掉IP之后不会返回任何东西
+                    # 也就是connect成功但是fail to read，但是默认connect在21秒后自动报错，但是read会一直等
+                    response = opener.open(req, timeout=20)
                 except Exception as e:
                     print("[Get_List]Error ", e)
                     print("[Get_Comments]False to spider " + str(poiid) + " page " + str(page))
