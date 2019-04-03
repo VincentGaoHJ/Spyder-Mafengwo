@@ -160,21 +160,28 @@ if __name__ == "__main__":
                     page -= 1
                     ip_list = getProxy()
                 else:
-                    response_context = response.read()
-                    if any(response_context) is False:
-                        print("Seccessful but nothing")
-                        print(page)
-                        continue
-                    print(
-                        "[" + str(i) + "/" + str(total_number) + "]Success to spider " + str(poiid) + " page " + str(
-                            page))
-                    # 返回的是一个json格式的字符串，将字符串转为dict对象
-                    data_json = json.loads(response_context.decode("utf8"))
-                    data = data_json.get("data")
-                    if data["page"]["next"] is True:
-                        for loc in data["list"]:
-                            writer.writerow([poiid, data["page"]["no"], loc["comment"]])
+                    try:
+                        response_context = response.read()
+                    except Exception as e:
+                        print("[Get_List]Error ", e)
+                        print("[Get_Comments]False to read " + str(poiid) + " page " + str(page))
+                        page -= 1
+                        ip_list = getProxy()
                     else:
-                        print("[Get_Comments]Done write file " + str(list_loc[i][0]) + " page number is " + str(page))
-                        hasMore = False
+                        if any(response_context) is False:
+                            print("Seccessful but nothing")
+                            print(page)
+                            continue
+                        print(
+                            "[" + str(i) + "/" + str(total_number) + "]Success to spider " + str(poiid) + " page " + str(
+                                page))
+                        # 返回的是一个json格式的字符串，将字符串转为dict对象
+                        data_json = json.loads(response_context.decode("utf8"))
+                        data = data_json.get("data")
+                        if data["page"]["next"] is True:
+                            for loc in data["list"]:
+                                writer.writerow([poiid, data["page"]["no"], loc["comment"]])
+                        else:
+                            print("[Get_Comments]Done write file " + str(list_loc[i][0]) + " page number is " + str(page))
+                            hasMore = False
             page = 0
