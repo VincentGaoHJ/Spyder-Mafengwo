@@ -27,7 +27,7 @@ from fake_useragent import UserAgent
 
 The proxy IP with http://www.xicidaili.com/ is obtained, and fakeUA is generated to test. After passing the test, use proxy IP and self-built UA list to access web of mafengwo http://www.mafengwo.cn/mdd/map/10065.html. After being blocked, the proxy IP is automatically retrieved to continue.
 
-Please attention that tnere are nearly 10 thousands locations in Beijing and a large mount of locations have no comment or few comments, so I abondon the locations which have less than 5 comments.
+Please attention that tnere are nearly 10 thousands locations in Beijing and a large mount of locations have no comment or few comments, so I abandon the locations which have less than 5 comments.
 
 + run `getList_subpoi.py` to get all locations' basic information **including the sub-locations("角楼" is a sub location of "故宫")**, and fill up the `list_all_sub.txt`.
 
