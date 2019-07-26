@@ -82,14 +82,22 @@ def get_starter(file_path):
         # 检查是否只有表头
         if page_byte.decode(encoding='utf-8') != "page":
             page_num = int(page_byte.decode(encoding='utf-8'))
+<<<<<<< HEAD
+            print("[Get_List]Already spider page :", page_num)
+=======
             print("[Get_List]Already spider page :", page)
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
     else:
         with open(file_path, 'a+', encoding='utf-8') as f:
             f.write("name\ttype_id\tid\tlat\tlng\tpage\n")
     return page_num
 
 
+<<<<<<< HEAD
+def prepare_request(paras, ip_list, post_url):
+=======
 def prepare_request(paras, ip_list):
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
     """
     构建完整的请求内容，其中包括参数，headers和代理IP
     :param paras: 请求参数
@@ -112,18 +120,30 @@ def prepare_request(paras, ip_list):
     return opener, req
 
 
+<<<<<<< HEAD
+def get_list(province_id, filePath):
+=======
 if __name__ == "__main__":
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
     post_url = "http://www.mafengwo.cn/mdd/base/map/getPoiList"
 
     ip_list = getProxy()
     print("[Get_List]The valid IP: ", ip_list)
 
+<<<<<<< HEAD
+    page = get_starter(filePath)
+
+    while page <= 15:
+        param = {'mddid': province_id, 'page': page, 'type[]': 3}
+        opener, req = prepare_request(param, ip_list, post_url)
+=======
     filePath = "./data/list_all.txt"
     page = get_starter(filePath)
 
     while page < 1000:
         param = {'mddid': '10065', 'page': page}
         opener, req = prepare_request(param, ip_list)
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
         # 使用自定义的opener对象，调用open()方法来发送请求
         try:
             response = opener.open(req)
@@ -150,3 +170,13 @@ if __name__ == "__main__":
                                 str(loc["lng"]) + "\t" + str(page) + "\n")
         page += 1
     print("[Get_List]Done spider all the list")
+<<<<<<< HEAD
+
+
+if __name__ == "__main__":
+
+    province_id = "11239"
+
+    get_list(province_id)
+=======
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb

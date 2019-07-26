@@ -126,11 +126,18 @@ def get_starter(init_file_path, file_path):
     return list_loc, page
 
 
+<<<<<<< HEAD
+def get_comments(province_id, initFilePath, filePath):
+    headers, userAgent = head_useragent()
+    initFilePath = "./data/" + province_id + "_list_all_sub.txt"
+    filePath = "./data/" + province_id + "_comment_all.csv"
+=======
 if __name__ == "__main__":
 
     headers, userAgent = head_useragent()
     initFilePath = "./data/list_all_sub.txt"
     filePath = "./data/comment_all.csv"
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
 
     list_loc, page = get_starter(initFilePath, filePath)
     total_number = len(list_loc)
@@ -169,11 +176,20 @@ if __name__ == "__main__":
                         ip_list = getProxy()
                     else:
                         if any(response_context) is False:
+<<<<<<< HEAD
+                            print("Successful but nothing")
+                            print(page)
+                            continue
+                        print(
+                            "[" + str(i) + "/" + str(total_number) + "]Success to spider " + str(
+                                poiid) + " page " + str(
+=======
                             print("Seccessful but nothing")
                             print(page)
                             continue
                         print(
                             "[" + str(i) + "/" + str(total_number) + "]Success to spider " + str(poiid) + " page " + str(
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
                                 page))
                         # 返回的是一个json格式的字符串，将字符串转为dict对象
                         data_json = json.loads(response_context.decode("utf8"))
@@ -182,6 +198,19 @@ if __name__ == "__main__":
                             for loc in data["list"]:
                                 writer.writerow([poiid, data["page"]["no"], loc["comment"]])
                         else:
+<<<<<<< HEAD
+                            print(
+                                "[Get_Comments]Done write file " + str(list_loc[i][0]) + " page number is " + str(page))
+                            hasMore = False
+            page = 0
+
+
+if __name__ == "__main__":
+
+    province_id = "11239"
+    get_comments(province_id)
+=======
                             print("[Get_Comments]Done write file " + str(list_loc[i][0]) + " page number is " + str(page))
                             hasMore = False
             page = 0
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb

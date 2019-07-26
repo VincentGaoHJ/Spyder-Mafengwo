@@ -197,7 +197,11 @@ def get_starter(init_file_path, file_path):
     return list_location, father_id, subpage
 
 
+<<<<<<< HEAD
+def prepare_request(poiid, sub_page, ip_list, userAgent, headers):
+=======
 def prepare_request(poiid, sub_page, ip_list):
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
     """
     构建opener对象以及完整的请求内容，其中包括参数，headers和代理IP
     :param poiid: 请求参数：子景点poiid
@@ -246,12 +250,20 @@ def clean_file(file_path):
                        str(poi_tuple[8]) + "\n")
 
 
+<<<<<<< HEAD
+def get_subpoi(province_id, initFilePath, filePath):
+    headers, userAgent = head_useragent()
+
+    initFilePath = "./data/" + province_id + "_list_all.txt"
+    filePath = "./data/" + province_id + "_list_all_sub.txt"
+=======
 if __name__ == "__main__":
 
     headers, userAgent = head_useragent()
 
     initFilePath = "./data/list_all.txt"
     filePath = "./data/list_all_sub.txt"
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
 
     list_loc, fatherId, sub_page = get_starter(initFilePath, filePath)
 
@@ -272,7 +284,11 @@ if __name__ == "__main__":
         while hasMore:
             # 准备请求内容以及请求URL
             sub_page += 1
+<<<<<<< HEAD
+            opener, req = prepare_request(poi[2], sub_page, ip_list, userAgent, headers)
+=======
             opener, req = prepare_request(poi[2], sub_page, ip_list)
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
 
             # 判断该景点（父景点）是否有子景点，如果有则继续，没有则跳过
             try:
@@ -331,3 +347,12 @@ if __name__ == "__main__":
 
     # 因为有的景点可能既是一个独立的景点，又同时属于某一个景点的子景点，那么它就会存在两次
     clean_file(filePath)
+<<<<<<< HEAD
+
+
+if __name__ == "__main__":
+    province_id = "11239"
+
+    get_subpoi(province_id)
+=======
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb

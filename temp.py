@@ -5,6 +5,8 @@
 @Description: 用于调试代码
 """
 
+<<<<<<< HEAD
+=======
 import csv
 
 with open("test.csv", "w", newline='') as csvfile:
@@ -20,3 +22,4 @@ with open("test.csv", "r") as csvfile:
     # 这里不需要readlines
     for line in reader:
         print(line)
+>>>>>>> 04ae88d9ca59538b7d55c396b3bd2e35fc1cdacb
